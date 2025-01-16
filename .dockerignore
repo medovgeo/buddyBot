@@ -1,0 +1,9 @@
+# .dockerignore
+.gradle
+/cache
+/build
+/*.iml
+/.idea
+/.git
+*.md
+/.env
