@@ -1,11 +1,10 @@
 package org.example
 
 import com.mongodb.kotlin.client.coroutine.MongoClient
+import io.github.cdimascio.dotenv.dotenv
+import org.slf4j.LoggerFactory
 import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient
 import org.telegram.telegrambots.longpolling.TelegramBotsLongPollingApplication
-import io.github.cdimascio.dotenv.dotenv
-import kotlinx.coroutines.runBlocking
-import org.slf4j.LoggerFactory
 
 
 val logger = LoggerFactory.getLogger("Application")
@@ -17,6 +16,7 @@ fun main() {
     }
 
     val botToken = dotenv["BOT_TOKEN"] ?: throw IllegalArgumentException("BOT_TOKEN is not set")
+    val botName = dotenv["BOT_NAME"] ?: throw IllegalArgumentException("BOT_NAME is not set")
 
     val telegramClient = OkHttpTelegramClient(botToken)
 
@@ -30,20 +30,12 @@ fun main() {
     val geminiModel = dotenv["GEMINI_MODEL"] ?: throw IllegalArgumentException("GEMINI_MODEL is not set")
     val geminiToken = dotenv["GEMINI_TOKEN"] ?: throw IllegalArgumentException("GEMINI_TOKEN is not set")
     // Gemini client
-    val gemini = Gemini(geminiModel, geminiToken)
+    val gemini = Gemini(geminiModel, geminiToken, botName)
 
-    val bot = Bot(telegramClient, mongo, gemini)
-
-//    runBlocking {
-//        mongo.getChatHistory(321710353)
-//            .forEach { println(it) }
-//    }
-
+    val bot = Bot(botName, telegramClient, mongo, gemini)
     TelegramBotsLongPollingApplication().use { app ->
         app.registerBot(botToken, bot)
         Thread.currentThread().join()
     }
-
-
 
 }

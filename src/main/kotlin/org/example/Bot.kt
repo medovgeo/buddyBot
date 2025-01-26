@@ -4,7 +4,11 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.example.Bot.Companion.mskZone
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Serializer
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient
@@ -16,11 +20,12 @@ import org.telegram.telegrambots.meta.api.objects.Update
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.time.ZoneOffset
-import org.telegram.telegrambots.meta.api.objects.message.Message as MessageTG
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.ConcurrentHashMap
+import org.telegram.telegrambots.meta.api.objects.message.Message as MessageTG
 
 class Bot(
+    private val botName: String,
     private val telegramClient: OkHttpTelegramClient,
     private val mongo: Mongo,
     private val gemini: Gemini,
@@ -34,53 +39,66 @@ class Bot(
     private val chatMutexes = ConcurrentHashMap<Long, Mutex>() // todo : cache expiring by time
 
     override fun consume(update: Update) {
-        if (!update.hasMessage()) return
-        // todo : if message has mention or reply to bot
-        val messages = if (update.message.replyToMessage != null)
-            listOf(update.message.replyToMessage.toMessage(), update.message.toMessage())
-        else
-            listOf(update.message.toMessage())
+        if (!update.toProcess()) return
+
+        val messages = update.extractMessages()
 
         coroutineScope.launch {
 
-            println(update)
+//            logger.info(update.toString()) // todo : delete
             val chatMutex = chatMutexes.getOrPut(update.message.chatId) { Mutex() }
             chatMutex.withLock { // messages in single chat processed sequentially
-                startTyping(update)
 
+                startTyping(update)
                 // todo : put message(s) to cache?
-                // put message(s) to mongo - ignore failure
-                mongo.saveMessages(messages)
-                // get chat history (cache or mongo)
+                mongo.saveMessages(messages) // put message(s) to mongo - ignore failures
+                val history = mongo.getChatHistory(update.message.chatId) // get chat history (todo : cache or mongo)
+
                 startTyping(update)
-                // request reply in gemini
+                val comment = gemini.generateComment(history) // request reply in gemini
                 // send reply to chat
-                // save reply to mongo : with message id, etc
+                if (comment.isNotBlank()) {
+                    sengTGMessage(SendMessage(update.message.chat.id.toString(), comment))?.let { message ->
+                        // save reply to mongo
+                         mongo.saveMessages(listOf(message.toMessage()))
+                    }
+                }
 
-
-                val mess = SendMessage(update.message.chat.id.toString(), update.message.text)
-                sengTGMessage(mess)
             }
         }
+    }
+
+    private fun Update.extractMessages() =
+        if (message?.replyToMessage != null)
+            listOf(message.replyToMessage.toMessage(), message.toMessage())
+        else
+            listOf(message.toMessage())
+
+    private fun Update.toProcess(): Boolean {
+        if ((message?.text?:"").isBlank()) return false
+
+        return message?.text?.contains("@$botName")?:false
+                || message?.replyToMessage?.from?.userName == botName
     }
 
     private suspend fun sengTGMessage(message: SendMessage) = try {
         telegramClient.executeAsync(message).await()
     } catch (e: Exception) {
-        logger.error("Error sending message with telegram client", e)
+        logger.error("Error sending message with telegram client, message: $message", e)
+        null
     }
 
     private suspend fun startTyping(update: Update) = try {
         val typeAction = SendChatAction(update.message.chatId.toString(), ActionType.TYPING.toString())
         telegramClient.executeAsync(typeAction).await()
     } catch (e: Exception) {
-        logger.error("Error sending message with telegram client", e)
+        logger.error("Error typing in telegram client, chatId: ${update.message.chatId}", e)
     }
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.simpleName)
 
-        val mskZone = ZoneId.of("Europe/Moscow")
+        private val mskZone = ZoneId.of("Europe/Moscow")
 
         fun MessageTG.toMessage() = Message(
             chatId,
@@ -95,9 +113,11 @@ class Bot(
     }
 }
 
+@Serializable
 data class Message(
     val chatId: Long,
     val messageId: Int,
+    @Serializable(with = LocalDateTimeSerializer::class)
     val dateTime: LocalDateTime,
     val fromName: String,
     val fromNickname: String? = null,
@@ -105,14 +125,21 @@ data class Message(
     val text: String,
 )
 
+@Serializer(forClass = LocalDateTime::class)
+class LocalDateTimeSerializer : KSerializer<LocalDateTime> {
+    private val formatter: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+
+    override fun serialize(encoder: Encoder, value: LocalDateTime) {
+        encoder.encodeString(value.format(formatter))
+    }
+
+    override fun deserialize(decoder: Decoder): LocalDateTime {
+        return LocalDateTime.parse(decoder.decodeString(), formatter)
+    }
+}
+
 fun main() {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-
-    val inst = Instant.ofEpochSecond(1737897000)
-    println(inst)
-    val lt = LocalDateTime.ofInstant(inst, ZoneId.of("Europe/Moscow"))
-    println(lt)
-    println(LocalDateTime.ofEpochSecond(1737897000, 0, ZoneOffset.of(mskZone.id)).toString(),)
 
     val mm = ConcurrentHashMap<Long, Mutex>()
     (1..6).forEach {

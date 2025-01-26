@@ -28,14 +28,14 @@ class Mongo(client: MongoClient) {
             collection.updateOne(filter, update, options)
         }
     } catch (e: Exception) {
-        logger.error("Error saving message in mongo", e)
+        logger.error("Error saving message in mongo, message: $messages", e)
     }
 
     suspend fun getChatHistory(chatId: Long): List<Message> = try {
         collection.find(Filters.eq(Message::chatId.name, chatId))
             .toList()
     } catch (e: Exception) {
-        logger.error("Error reading messages from mongo", e)
+        logger.error("Error reading messages from mongo for chatId: $chatId", e)
         emptyList()
     }
 

@@ -1,33 +1,40 @@
 package org.example
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.github.cdimascio.dotenv.dotenv
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.node.ArrayNode
+import com.fasterxml.jackson.databind.node.ObjectNode
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
-import java.net.http.HttpResponse;
+import java.net.http.HttpResponse
 import java.security.SecureRandom
 
 interface ModelApi {
-    fun commentNews(message: String): String
+    suspend fun generateComment(messages: List<Message>): String
 }
 
 class Gemini(
-    private val envModel: String,
-    private val envToken: String,
+    envModel: String,
+    envToken: String,
+    private val botName: String,
 ) : ModelApi {
 
-    override fun commentNews(message: String) = runCatching {
-        val httpResp = sendRequest(modelRequestBuilder, buildJson(commentNewsPrompt(message), true));
-        extractResponseText(mapper.readTree(httpResp));
+    override suspend fun generateComment(messages: List<Message>): String = runCatching {
+        val text = Json.encodeToString(messages)
+        val httpResponse = withContext(Dispatchers.IO) {
+            println(generatePrompt(text))
+            sendRequest(modelRequestBuilder, buildJson(generatePrompt(text), true))
+        }
+        extractResponseText(mapper.readTree(httpResponse))
     }
         .getOrElse {
-            // add logging
+            logger.error("Error while fetching gemini message, mess: $messages", it)
             ""
         }
 
@@ -51,51 +58,44 @@ class Gemini(
         lateinit var token: String
         lateinit var modelRequestBuilder: HttpRequest.Builder
 
-
-//        private static final List<String> characters = List.of(
-//        "собирательного образа Ильи Мэддисона, Юрия Хованского и Богдана Ласки Вавилова"
-//            "Максима Каца",
-//            "Джи Джи Аллина"
-//            "Бората"
-//        );
-
 //        private static final List<String> manners = List.of(
 //        "цинично-издевательской манере",
 //        "интеллигентной и профессиональной",
-//        "юмористической"
-//            "ласковой"
-//        );
+//        "юмористической",
+//        "ласковой",
+//        )
 
 //        private static final List<String> undertones = List.of(
 //        "оптимистичным",
 //        "обречённым",
 //        "обнадёживающим"
-//            "восхваляющим",
-//            "непринуждённым",
-//            "безумным"
-//        );
+//        "восхваляющим",
+//        "непринуждённым",
+//        "безумным",
+//        )
 
-//        private static final List<String> additions = List.of(
-//        "интересный факт",
-//        "аналогию",
-//        "чёрный юмор"
-//            "тонкую отсылку на Звёздные Войны",
-//            "тонкую отсылку на Warhammer 40k"
-//        );
+        private val additions = listOf(
+            "интересный факт",
+            "аналогию",
+            "чёрный юмор",
+            "отсылку на Warhammer 40k",
+            "оскорбление",
+            "похвалу",
+        )
 
-//        private static final List<String> sizes = List.of(
-//        "200",
-//        "300",
-//        "400",
-//        "400",
-//        "400",
-//        "1000"
-//        );
+        private val sizes = listOf(
+            "20",
+            "20",
+            "30",
+            "30",
+            "50",
+            "400",
+        )
 
 //        private static final List<String> patriotManners = List.of(
 //        "патриотичной",
 //        "оптимистичной"
-//        );
+//        )
 
 
         val rnd = SecureRandom()
@@ -188,12 +188,18 @@ class Gemini(
             .path("candidates").path(0).path("content")
             .path("parts").path(0).path("text").asText();
 
-    fun commentNewsPrompt(message: String): String {
+    private fun generatePrompt(text: String): String {
 //        var character = characters.get(rnd.nextInt(characters.size()));
 //        var manner = manners.get(rnd.nextInt(manners.size()));
 //        var undertone = undertones.get(rnd.nextInt(undertones.size()));
 //        var addition = additions.get(rnd.nextInt(additions.size()));
-//        var size = sizes.get(rnd.nextInt(sizes.size()));
+        var addition = additions[rnd.nextInt(additions.size)]
+        var size = sizes[rnd.nextInt(sizes.size)]
+        return "Текст ниже в формате json это переписка друзей в чате. " +
+                "Ты один из его участников, под ником $botName. " +
+                "Прокомментируй последнее сообщение в текстовом формате в стиле участников чата, в циничной манере с юмором. " +
+                "Ответ должен быть не больше $size символов и содержать оскорбление " +
+                "```$text```"
 
 //        return "Прокомментируй новость от лица" + character + ", " +
 //                "в остроумной и " + manner + " манере, " +
@@ -204,22 +210,7 @@ class Gemini(
 //                "\n```" +
 //                "\nНовость: " + message +
 //                "\n```";
-        return message
+        return text
     }
 
-}
-
-fun main() {
-
-    val dotenv = dotenv { ignoreIfMissing = true }
-    val model = dotenv["GEMINI_MODEL"]
-    val token = dotenv["GEMINI_TOKEN"]
-
-    val proxy = Gemini(model, token)
-
-    val originalMessage = "Привет"
-
-    val response = proxy.commentNews(originalMessage)
-
-    println("Response Code: " + response)
 }
