@@ -38,7 +38,6 @@ fun main() {
 //        mongo.getChatHistory(321710353)
 //            .forEach { println(it) }
 //    }
-    // test
 
     TelegramBotsLongPollingApplication().use { app ->
         app.registerBot(botToken, bot)
