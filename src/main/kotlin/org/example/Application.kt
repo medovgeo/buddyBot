@@ -34,10 +34,10 @@ fun main() {
 
     val bot = Bot(telegramClient, mongo, gemini)
 
-    runBlocking {
-        mongo.getChatHistory(321710353)
-            .forEach { println(it) }
-    }
+//    runBlocking {
+//        mongo.getChatHistory(321710353)
+//            .forEach { println(it) }
+//    }
 
     TelegramBotsLongPollingApplication().use { app ->
         app.registerBot(botToken, bot)
