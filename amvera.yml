@@ -8,8 +8,7 @@ build:
   dockerfile: Dockerfile
   skip: false
 run:
-#  image: null
   command: java -jar app.jar
-#  args: null
   persistenceMount: /data
   containerPort: 80
+  servicePort: 80
