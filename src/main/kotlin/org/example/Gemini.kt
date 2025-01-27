@@ -14,6 +14,7 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.security.SecureRandom
+import java.time.Duration
 
 interface ModelApi {
     suspend fun generateComment(messages: List<Message>): String
@@ -28,7 +29,6 @@ class Gemini(
     override suspend fun generateComment(messages: List<Message>): String = runCatching {
         val text = Json.encodeToString(messages)
         val httpResponse = withContext(Dispatchers.IO) {
-            println(generatePrompt(text))
             sendRequest(modelRequestBuilder, buildJson(generatePrompt(text), true))
         }
         extractResponseText(mapper.readTree(httpResponse))
@@ -58,37 +58,42 @@ class Gemini(
         lateinit var token: String
         lateinit var modelRequestBuilder: HttpRequest.Builder
 
-//        private static final List<String> manners = List.of(
-//        "цинично-издевательской манере",
-//        "интеллигентной и профессиональной",
-//        "юмористической",
-//        "ласковой",
+//        val manners = listOf(
+//            "цинично-издевательской манере",
+//            "интеллигентной и профессиональной",
+//            "юмористической",
+//            "ласковой",
 //        )
 
-//        private static final List<String> undertones = List.of(
-//        "оптимистичным",
-//        "обречённым",
-//        "обнадёживающим"
-//        "восхваляющим",
-//        "непринуждённым",
-//        "безумным",
-//        )
+        val undertones = listOf(
+            "оптимистичным",
+            "цинично-издевательским",
+            "цинично-издевательским",
+            "цинично-издевательским",
+//            "обречённым",
+            "игривым",
+//            "обнадёживающим",
+            "хвалебным",
+            "ласковым",
+            "патриотичным",
+        )
 
         private val additions = listOf(
-            "интересный факт",
-            "аналогию",
-            "чёрный юмор",
-            "отсылку на Warhammer 40k",
+//            "интересный факт",
+//            "аналогию",
+//            "чёрный юмор",
+//            "отсылку на Warhammer 40k",
             "оскорбление",
             "похвалу",
         )
 
         private val sizes = listOf(
-            "20",
-            "20",
-            "30",
-            "30",
             "50",
+            "50",
+            "50",
+            "50",
+            "300",
+            "300",
             "400",
         )
 
@@ -99,7 +104,7 @@ class Gemini(
 
 
         val rnd = SecureRandom()
-        val client = HttpClient.newHttpClient()
+        val client = HttpClient.newBuilder().connectTimeout(Duration.ofMinutes(3)).build()
 
     }
 
@@ -191,26 +196,16 @@ class Gemini(
     private fun generatePrompt(text: String): String {
 //        var character = characters.get(rnd.nextInt(characters.size()));
 //        var manner = manners.get(rnd.nextInt(manners.size()));
-//        var undertone = undertones.get(rnd.nextInt(undertones.size()));
-//        var addition = additions.get(rnd.nextInt(additions.size()));
-        var addition = additions[rnd.nextInt(additions.size)]
-        var size = sizes[rnd.nextInt(sizes.size)]
+        val undertone = undertones[rnd.nextInt(undertones.size)]
+//        val addition = additions[rnd.nextInt(additions.size)]
+        val size = sizes[rnd.nextInt(sizes.size)]
+
         return "Текст ниже в формате json это переписка друзей в чате. " +
                 "Ты один из его участников, под ником $botName. " +
-                "Прокомментируй последнее сообщение в текстовом формате в стиле участников чата, в циничной манере с юмором. " +
-                "Ответ должен быть не больше $size символов и содержать оскорбление " +
+                "Прокомментируй последнее сообщение в текстовом формате." +
+                "Ответ должен соответствовать стилю чата, с $undertone оттенком " +
+                "и быть не больше $size символов " + // и содержать $addition " +
                 "```$text```"
-
-//        return "Прокомментируй новость от лица" + character + ", " +
-//                "в остроумной и " + manner + " манере, " +
-//                "c ироничным и " + undertone + " подтекстом " +
-//                "и добавь " + addition + " в ответ. " +
-//                "Размер ответа не должен превышать " + size + " символов. " +
-//                "Не упоминай своё имя в ответе." +
-//                "\n```" +
-//                "\nНовость: " + message +
-//                "\n```";
-        return text
     }
 
 }

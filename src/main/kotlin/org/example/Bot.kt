@@ -69,7 +69,7 @@ class Bot(
     }
 
     private fun Update.extractMessages() =
-        if (message?.replyToMessage != null)
+        if ((message?.replyToMessage?.text?:"").isNotBlank())
             listOf(message.replyToMessage.toMessage(), message.toMessage())
         else
             listOf(message.toMessage())
@@ -136,22 +136,4 @@ class LocalDateTimeSerializer : KSerializer<LocalDateTime> {
     override fun deserialize(decoder: Decoder): LocalDateTime {
         return LocalDateTime.parse(decoder.decodeString(), formatter)
     }
-}
-
-fun main() {
-    val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-
-    val mm = ConcurrentHashMap<Long, Mutex>()
-    (1..6).forEach {
-        scope.launch {
-            val m = mm.getOrPut(it % 2L) { Mutex() }
-            m.withLock {
-                delay(1000)
-                println('1')
-            }
-        }
-    }
-
-    Thread.sleep(6000)
-
 }
