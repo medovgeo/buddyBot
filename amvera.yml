@@ -1,0 +1,15 @@
+version: null
+meta:
+  environment: docker
+  toolchain:
+    name: docker
+    version: latest
+build:
+  dockerfile: Dockerfile
+  skip: false
+run:
+#  image: null
+  command: java -jar app.jar
+#  args: null
+  persistenceMount: /data
+  containerPort: 80
