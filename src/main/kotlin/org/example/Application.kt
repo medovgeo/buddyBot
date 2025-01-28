@@ -17,6 +17,7 @@ fun main() {
 
     val botToken = dotenv["BOT_TOKEN"] ?: throw IllegalArgumentException("BOT_TOKEN is not set")
     val botName = dotenv["BOT_NAME"] ?: throw IllegalArgumentException("BOT_NAME is not set")
+    logger.info(botName)
 
     val telegramClient = OkHttpTelegramClient(botToken)
 
