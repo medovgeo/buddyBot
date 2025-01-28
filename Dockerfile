@@ -41,4 +41,4 @@ COPY --from=builder /home/gradle/project/build/libs/buddyBot-1.0.0-all.jar app.j
 # EXPOSE 8080
 
 # Run the application
-#ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
