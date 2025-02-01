@@ -59,7 +59,7 @@ class Bot(
 
             sengTGMessage(SendMessage(message.chatId.toString(), comment))?.let { tgMessege ->
                 // save reply to mongo
-//                mongo.saveMessage(tgMessege.toMessage()) //
+//                mongo.saveMessage(tgMessege.toMessage())
             }
         }
 
