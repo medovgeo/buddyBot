@@ -57,10 +57,10 @@ class Bot(
             startTyping(message.chatId.toString())
             delay(Random.nextInt(3, 10) * 1000L)
 
-//            sengTGMessage(SendMessage(message.chatId.toString(), comment))?.let { tgMessege ->
+            sengTGMessage(SendMessage(message.chatId.toString(), comment))?.let { tgMessege ->
                 // save reply to mongo
 //                mongo.saveMessage(tgMessege.toMessage())
-//            }
+            }
         }
 
     }
