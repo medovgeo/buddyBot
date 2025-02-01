@@ -11,6 +11,7 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlin.random.Random
 import org.telegram.telegrambots.meta.api.objects.message.Message as MessageTG
 
 val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
@@ -41,6 +42,7 @@ fun Update.prepareReply(botName: String): Pair<Message?, Boolean> {
     val needsReply = when {
         (message?.text ?: "").isBlank() -> false
         message?.forwardFromChat != null -> false
+        Random.nextInt(1, 100) > 96 -> true
         else -> message?.text?.contains("@$botName") ?: false
                 || message?.replyToMessage?.from?.userName == botName
     }
