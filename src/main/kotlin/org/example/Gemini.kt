@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.URI
@@ -20,6 +19,7 @@ interface ModelApi {
     suspend fun generateComment(messages: List<Message>): String
 }
 
+// todo : move extra code to separate module and helpers
 class Gemini(
     envModel: String,
     envToken: String,
@@ -27,9 +27,16 @@ class Gemini(
 ) : ModelApi {
 
     override suspend fun generateComment(messages: List<Message>): String = runCatching {
-        val text = Json.encodeToString(messages)
+//        val text = Json.encodeToString(messages)
+        val text = StringBuilder()
+        messages.forEach { message ->
+            text.append("`")
+            text.append("from: ${message.from}, time: ${message.dateTime.format(formatter)}, text: ${message.text}")
+            text.append("`\n")
+        }
         val httpResponse = withContext(Dispatchers.IO) {
-            sendRequest(modelRequestBuilder, buildJson(generatePrompt(text), true))
+            println(text.toString())
+            sendRequest(modelRequestBuilder, buildJson(generatePrompt(text.toString()), true))
         }
         extractResponseText(mapper.readTree(httpResponse))
     }
@@ -66,22 +73,23 @@ class Gemini(
 //        )
 
         val undertones = listOf(
-            "оптимистичным",
+//            "оптимистичным",
             "цинично-издевательским",
             "цинично-издевательским",
             "цинично-издевательским",
-//            "обречённым",
+            "обречённым",
             "игривым",
+            "надменным",
 //            "обнадёживающим",
             "хвалебным",
-            "ласковым",
-            "патриотичным",
+//            "ласковым",
+            "патриотично Российским",
         )
 
         private val additions = listOf(
 //            "интересный факт",
 //            "аналогию",
-//            "чёрный юмор",
+            "чёрный юмор",
 //            "отсылку на Warhammer 40k",
             "оскорбление",
             "похвалу",
@@ -90,10 +98,11 @@ class Gemini(
         private val sizes = listOf(
             "50",
             "50",
-            "50",
-            "50",
+//            "50",
+//            "50",
             "300",
             "300",
+            "400",
             "400",
         )
 
@@ -103,7 +112,6 @@ class Gemini(
 //        )
 
 
-        val rnd = SecureRandom()
         val client = HttpClient.newBuilder().connectTimeout(Duration.ofMinutes(3)).build()
 
     }
@@ -196,15 +204,15 @@ class Gemini(
     private fun generatePrompt(text: String): String {
 //        var character = characters.get(rnd.nextInt(characters.size()));
 //        var manner = manners.get(rnd.nextInt(manners.size()));
-        val undertone = undertones[rnd.nextInt(undertones.size)]
+        val undertone = undertones.random()
 //        val addition = additions[rnd.nextInt(additions.size)]
-        val size = sizes[rnd.nextInt(sizes.size)]
+        val size = sizes.random()
 
         return "Текст ниже в формате json это переписка друзей в чате. " +
                 "Ты один из его участников, под ником $botName. " +
-                "Прокомментируй последнее сообщение в текстовом формате." +
-                "Ответ должен соответствовать стилю чата, с $undertone оттенком " +
-                "и быть не больше $size символов " + // и содержать $addition " +
+                "Остроумно ответь на последнее сообщение осмысленно последнему контексту с $undertone оттенком, используя частые слова и фразы других участников из переписки." +
+                "Ответ должен быть в текстовом формате " +
+                "и быть не больше $size символов. " + // и содержать $addition " +
                 "```$text```"
     }
 
