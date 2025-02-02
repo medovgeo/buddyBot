@@ -12,7 +12,6 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.security.SecureRandom
 import java.time.Duration
 
 interface ModelApi {
@@ -61,6 +60,8 @@ class Gemini(
     companion object {
 
         private val logger: Logger = LoggerFactory.getLogger(this::class.java.simpleName)
+
+        val client: HttpClient = HttpClient.newBuilder().connectTimeout(Duration.ofMinutes(3)).build()
 
         val mapper = ObjectMapper()
 
@@ -113,10 +114,6 @@ class Gemini(
 //        "патриотичной",
 //        "оптимистичной"
 //        )
-
-
-        val client = HttpClient.newBuilder().connectTimeout(Duration.ofMinutes(3)).build()
-
     }
 
 
@@ -127,9 +124,9 @@ class Gemini(
 //        val addition = additions[rnd.nextInt(additions.size)]
         val size = sizes.random()
 
-        return "Текст ниже в формате json это переписка друзей в чате. " +
+        return "Текст ниже это переписка друзей в чате. " +
                 "Ты один из его участников, под ником $botName. " +
-                "Остроумно ответь на последнее сообщение в манере переписки, с $undertone оттенком. " +
+                "Остроумно ответь на последнее сообщение в манере чата, с $undertone оттенком. " +
 //                "Можешь использовать пару слов или фраз других участников из переписки, если они подходят по смыслу." +
                 "Ответ должен быть в текстовом формате " +
                 "и быть не больше $size символов. " + // и содержать $addition " +
@@ -154,8 +151,6 @@ class Gemini(
         rootNode
             .path("candidates").path(0).path("content")
             .path("parts").path(0).path("text").asText();
-
-
 
     private fun setSafetySettings(rootNode: ObjectNode) {
         // Создаем массив safetySettings
