@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.URI
@@ -26,12 +27,12 @@ class Gemini(
 ) : ModelApi {
 
     override suspend fun generateComment(messages: List<Message>): String = runCatching {
-//        val text = Json.encodeToString(messages)
-        val text = StringBuilder()
-        val replyTo = messages.last().replyTo?.let { " replyTo: $it," } ?: ""
-        messages.forEach { message ->
-            text.append("`from: ${message.from},${replyTo} time: ${message.dateTime.format(formatter)}, text: ${message.text}`\n")
-        }
+        val text = Json.encodeToString(messages)
+//        val text = StringBuilder()
+//        val replyTo = messages.last().replyTo?.let { " replyTo: $it," } ?: ""
+//        messages.forEach { message ->
+//            text.append("`from: ${message.from},${replyTo} time: ${message.dateTime.format(formatter)}, text: ${message.text}`\n")
+//        }
         val httpResponse = withContext(Dispatchers.IO) {
             sendRequest(modelRequestBuilder, buildJson(generatePrompt(text.toString()), true))
         }
@@ -125,13 +126,13 @@ class Gemini(
 //        val addition = additions[rnd.nextInt(additions.size)]
         val size = sizes.random()
 
-        return "Текст ниже это переписка друзей в чате. " +
+        return "Текст ниже в формате json это переписка друзей в чате. " +
                 "Ты один из его участников, под ником $botName. " +
                 "Остроумно ответь на последнее сообщение в чате, с $undertone оттенком. " +
 //                "Можешь использовать пару слов или фраз других участников из переписки, если они подходят по смыслу." +
                 "Ответ должен быть в текстовом формате " +
                 "и быть не больше $size символов. " + // и содержать $addition " +
-                "```$text```"
+                "```json\n$text\n```"
     }
 
     private fun setGenerationCfg(generationConfigNode: ObjectNode) {

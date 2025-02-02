@@ -1,8 +1,6 @@
 package org.example
 
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.Serializer
+import kotlinx.serialization.*
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import org.telegram.telegrambots.meta.api.objects.Update
@@ -22,8 +20,8 @@ private val mskZone = ZoneId.of("Europe/Moscow")
 fun MessageTG.toMessage(overridenText: String? = null) = Message(
     chatId,
     messageId,
-    LocalDateTime.ofInstant(Instant.ofEpochSecond(date.toLong()), mskZone),
     (forwardFrom ?: from).extractUsername(),
+    LocalDateTime.ofInstant(Instant.ofEpochSecond(date.toLong()), mskZone),
     replyToMessage?.from?.extractUsername(),
     overridenText ?: text
 )
@@ -57,16 +55,17 @@ fun Update.prepareReply(botName: String): Pair<Message?, Boolean> {
 @Serializable
 data class Message(
     val chatId: Long,
-    val messageId: Int? = null,
+    val messageId: Int,
+    val from: String,
     @Serializable(with = LocalDateTimeSerializer::class)
     val dateTime: LocalDateTime,
-    val from: String,
 //    val fromName: String,
 //    val fromNickname: String? = null,
     val replyTo: String? = null,
     val text: String,
 )
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializer(forClass = LocalDateTime::class)
 class LocalDateTimeSerializer : KSerializer<LocalDateTime> {
 
