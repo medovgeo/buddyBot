@@ -28,9 +28,10 @@ class Gemini(
     override suspend fun generateComment(messages: List<Message>): String = runCatching {
 //        val text = Json.encodeToString(messages)
         val text = StringBuilder()
+        val replyTo = messages.last().replyTo?.let { " replyTo: $it," } ?: ""
         messages.forEach { message ->
             text.append("`")
-            text.append("from: ${message.from}, time: ${message.dateTime.format(formatter)}, text: ${message.text}")
+            text.append("from: ${message.from},${replyTo} time: ${message.dateTime.format(formatter)}, text: ${message.text}")
             text.append("`\n")
         }
         val httpResponse = withContext(Dispatchers.IO) {
@@ -77,7 +78,7 @@ class Gemini(
 //        )
 
         val undertones = listOf(
-//            "оптимистичным",
+            "иронично-оптимистичным",
             "цинично-издевательским",
             "цинично-издевательским",
             "цинично-издевательским",
@@ -85,7 +86,7 @@ class Gemini(
             "игривым",
             "надменным",
 //            "обнадёживающим",
-            "хвалебным",
+//            "хвалебным",
 //            "ласковым",
             "патриотично Российским",
         )
@@ -96,7 +97,7 @@ class Gemini(
             "чёрный юмор",
 //            "отсылку на Warhammer 40k",
             "оскорбление",
-            "похвалу",
+//            "похвалу",
         )
 
         private val sizes = listOf(

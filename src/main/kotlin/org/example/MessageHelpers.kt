@@ -24,6 +24,7 @@ fun MessageTG.toMessage(overridenText: String? = null) = Message(
     messageId,
     LocalDateTime.ofInstant(Instant.ofEpochSecond(date.toLong()), mskZone),
     (forwardFrom ?: from).extractUsername(),
+    replyToMessage?.from?.extractUsername(),
     overridenText ?: text
 )
 
@@ -38,7 +39,7 @@ fun Update.prepareReply(botName: String): Pair<Message?, Boolean> {
         message?.forwardFromChat != null -> null
         message?.text == null -> null
         message?.text?.let { it.contains(botMention) && !it.contains(botName) } ?: true -> null
-        message?.replyToMessage?.text != null -> message.toMessageWithReplyieText()
+//        message?.replyToMessage?.text != null -> message.toMessageWithReplyieText()
         else -> message.toMessage()
     }
 
@@ -62,7 +63,7 @@ data class Message(
     val from: String,
 //    val fromName: String,
 //    val fromNickname: String? = null,
-//    val replyToMessageId: Int? = null,
+    val replyTo: String? = null,
     val text: String,
 )
 
