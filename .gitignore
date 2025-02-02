@@ -16,7 +16,7 @@ out/
 !**/src/main/**/out/
 !**/src/test/**/out/
 /.env
-/README.md
+#/README.md
 
 ### Kotlin ###
 .kotlin
