@@ -15,6 +15,7 @@ import kotlin.random.Random
 import org.telegram.telegrambots.meta.api.objects.message.Message as MessageTG
 
 val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+val botMention = Regex("@.+b", setOf(RegexOption.IGNORE_CASE))
 
 private val mskZone = ZoneId.of("Europe/Moscow")
 
@@ -34,7 +35,8 @@ fun Update.prepareReply(botName: String): Pair<Message?, Boolean> {
 
     val mess = when {
         message?.forwardFromChat != null -> null
-        message.text == null -> null
+        message?.text == null -> null
+        message?.text?.let { it.contains(botMention) && !it.contains(botName) } ?: true -> null
         message?.replyToMessage?.text != null -> message.toMessageWithReplyieText()
         else -> message.toMessage()
     }
