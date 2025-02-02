@@ -31,14 +31,14 @@ fun User.extractUsername() = userName.ifBlank { "$firstName $lastName" }
 fun MessageTG.toMessageWithReplyieText() =
     toMessage().let { it.copy(text = "${replyToMessage.from.extractUsername()}, ${it.text}") }
 
-fun Update.prepareReply(botName: String): Pair<Message?, Boolean> {
+fun Update.prepareReply(botName: String): Pair<List<Message>, Boolean> {
 
     val mess = when {
-        message?.forwardFromChat != null -> null
-        message?.text == null -> null
-        message?.text?.let { it.contains(botMention) && !it.contains(botName) } ?: true -> null
-//        message?.replyToMessage?.text != null -> message.toMessageWithReplyieText()
-        else -> message.toMessage()
+        message?.forwardFromChat != null -> emptyList()
+        message?.text == null -> emptyList()
+        message?.text?.let { it.contains(botMention) && !it.contains(botName) } ?: true -> emptyList()
+        message?.replyToMessage?.from?.userName == botName -> listOf(message.replyToMessage.toMessage(), message.toMessage())
+        else -> listOf(message.toMessage())
     }
 
     val needsReply = when {

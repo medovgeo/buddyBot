@@ -2,6 +2,7 @@ package org.example
 
 import com.mongodb.client.model.Filters
 import com.mongodb.kotlin.client.coroutine.MongoClient
+import kotlinx.coroutines.flow.toCollection
 import kotlinx.coroutines.flow.toList
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -35,12 +36,12 @@ class Mongo(client: MongoClient) {
 //        logger.error("Error saving message in mongo, message: $messages", e)
 //    }
 
-    suspend fun getChatHistory(chatId: Long): List<Message> = try {
+    suspend fun getChatHistory(chatId: Long): MutableList<Message> = try {
         collection.find(Filters.eq(Message::chatId.name, chatId))
-            .toList()
+            .toCollection(mutableListOf())
     } catch (e: Exception) {
         logger.error("Error reading messages from mongo for chatId: $chatId", e)
-        emptyList()
+        mutableListOf()
     }
 
     companion object {

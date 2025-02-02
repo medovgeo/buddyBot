@@ -35,37 +35,39 @@ class Bot(
 
             val chatMutex = chatMutexes.getOrPut(update.message.chatId) { Mutex() }
             chatMutex.withLock { // messages in single chat processed sequentially
-                val (message, noReply) = update.prepareReply(botName)
-                saveMessageAndReply(message, noReply)
+                val (messages, noReply) = update.prepareReply(botName)
+                saveMessageAndReply(messages, noReply)
             }
 
         }
     }
 
-    private suspend fun saveMessageAndReply(message: Message?, noReply: Boolean) {
+    private suspend fun saveMessageAndReply(messages: List<Message>, noReply: Boolean) {
         // todo : put message(s) to cache?
-        if (message == null) return
-        mongo.saveMessage(message)
-        if (noReply) return
+        if (messages.isEmpty()) return
+//        mongo.saveMessage(message)
+        if (noReply) {
+            mongo.saveMessage(messages.last())
+            return
+        }
 
-        val history = mongo.getChatHistory(message.chatId) // get chat history (todo : cache or mongo)
+        val history = mongo.getChatHistory(messages.last().chatId) // get chat history (todo : cache or mongo)
+        history.addAll(messages)
 
         val comment = gemini.generateComment(history) // request reply in gemini
 
+        mongo.saveMessage(messages.last())
+
         // send reply to chat
         if (comment.isNotBlank()) {
-            startTyping(message.chatId.toString())
+            startTyping(messages.last().chatId.toString())
             delay(Random.nextInt(3, 10) * 1000L)
-
-            val tgMessage = SendMessage(message.chatId.toString(), comment)
+            SendMessage(messages.last().chatId.toString(), comment)
                 .apply {
-                    replyToMessageId = message.messageId
+                    replyToMessageId = messages.last().messageId
                     allowSendingWithoutReply = true
+                    sengTGMessage(this)
                 }
-            sengTGMessage(tgMessage)?.let {
-                // save reply to mongo
-//                mongo.saveMessage(it.toMessage())
-            }
         }
 
     }
