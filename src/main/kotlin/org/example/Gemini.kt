@@ -30,9 +30,7 @@ class Gemini(
         val text = StringBuilder()
         val replyTo = messages.last().replyTo?.let { " replyTo: $it," } ?: ""
         messages.forEach { message ->
-            text.append("`")
-            text.append("from: ${message.from},${replyTo} time: ${message.dateTime.format(formatter)}, text: ${message.text}")
-            text.append("`\n")
+            text.append("`from: ${message.from},${replyTo} time: ${message.dateTime.format(formatter)}, text: ${message.text}`\n")
         }
         val httpResponse = withContext(Dispatchers.IO) {
             sendRequest(modelRequestBuilder, buildJson(generatePrompt(text.toString()), true))
