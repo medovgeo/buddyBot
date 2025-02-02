@@ -37,7 +37,11 @@ class Gemini(
         val httpResponse = withContext(Dispatchers.IO) {
             sendRequest(modelRequestBuilder, buildJson(generatePrompt(text.toString()), true))
         }
+
         extractResponseText(mapper.readTree(httpResponse))
+            .removePrefix(messages.last().from)
+            .removePrefix(",")
+            .trim()
     }
         .getOrElse {
             logger.error("Error while fetching gemini message, mess: $messages", it)
@@ -115,12 +119,43 @@ class Gemini(
 
     }
 
+
+    private fun generatePrompt(text: String): String {
+//        var character = characters.get(rnd.nextInt(characters.size()));
+//        var manner = manners.get(rnd.nextInt(manners.size()));
+        val undertone = undertones.random()
+//        val addition = additions[rnd.nextInt(additions.size)]
+        val size = sizes.random()
+
+        return "Текст ниже в формате json это переписка друзей в чате. " +
+                "Ты один из его участников, под ником $botName. " +
+                "Остроумно ответь на последнее сообщение в манере переписки, с $undertone оттенком. " +
+//                "Можешь использовать пару слов или фраз других участников из переписки, если они подходят по смыслу." +
+                "Ответ должен быть в текстовом формате " +
+                "и быть не больше $size символов. " + // и содержать $addition " +
+                "```$text```"
+    }
+
     private fun setGenerationCfg(generationConfigNode: ObjectNode) {
         generationConfigNode.put("temperature", 2.0)
 //        generationConfigNode.put("maxOutputTokens", 1000)
 //        generationConfigNode.put("topP", 0.95)
 //        generationConfigNode.put("topK", 10000)
     }
+
+    private fun sendRequest(httpBuilder: HttpRequest.Builder, message: String): String {
+        val request = httpBuilder.POST(HttpRequest.BodyPublishers.ofString(message))
+            .build()
+        return client.send(request, HttpResponse.BodyHandlers.ofString())
+            .body()
+    }
+
+    private fun extractResponseText(rootNode: JsonNode) =
+        rootNode
+            .path("candidates").path(0).path("content")
+            .path("parts").path(0).path("text").asText();
+
+
 
     private fun setSafetySettings(rootNode: ObjectNode) {
         // Создаем массив safetySettings
@@ -186,34 +221,6 @@ class Gemini(
 
         // Преобразуем в строку с отступами
         return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(rootNode)
-    }
-
-    private fun sendRequest(httpBuilder: HttpRequest.Builder, message: String): String {
-        val request = httpBuilder.POST(HttpRequest.BodyPublishers.ofString(message))
-            .build()
-        return client.send(request, HttpResponse.BodyHandlers.ofString())
-            .body()
-    }
-
-    private fun extractResponseText(rootNode: JsonNode) =
-        rootNode
-            .path("candidates").path(0).path("content")
-            .path("parts").path(0).path("text").asText();
-
-    private fun generatePrompt(text: String): String {
-//        var character = characters.get(rnd.nextInt(characters.size()));
-//        var manner = manners.get(rnd.nextInt(manners.size()));
-        val undertone = undertones.random()
-//        val addition = additions[rnd.nextInt(additions.size)]
-        val size = sizes.random()
-
-        return "Текст ниже в формате json это переписка друзей в чате. " +
-                "Ты один из его участников, под ником $botName. " +
-                "Остроумно ответь на последнее сообщение в манере переписки, с $undertone оттенком. " +
-//                "Можешь использовать пару слов или фраз других участников из переписки, если они подходят по смыслу." +
-                "Ответ должен быть в текстовом формате " +
-                "и быть не больше $size символов. " + // и содержать $addition " +
-                "```$text```"
     }
 
 }

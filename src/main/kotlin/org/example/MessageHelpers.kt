@@ -21,6 +21,7 @@ private val mskZone = ZoneId.of("Europe/Moscow")
 
 fun MessageTG.toMessage(overridenText: String? = null) = Message(
     chatId,
+    messageId,
     LocalDateTime.ofInstant(Instant.ofEpochSecond(date.toLong()), mskZone),
     (forwardFrom ?: from).extractUsername(),
     overridenText ?: text
@@ -55,7 +56,7 @@ fun Update.prepareReply(botName: String): Pair<Message?, Boolean> {
 @Serializable
 data class Message(
     val chatId: Long,
-//    val messageId: Int,
+    val messageId: Int? = null,
     @Serializable(with = LocalDateTimeSerializer::class)
     val dateTime: LocalDateTime,
     val from: String,

@@ -57,9 +57,14 @@ class Bot(
             startTyping(message.chatId.toString())
             delay(Random.nextInt(3, 10) * 1000L)
 
-            sengTGMessage(SendMessage(message.chatId.toString(), comment))?.let { tgMessege ->
+            val tgMessage = SendMessage(message.chatId.toString(), comment)
+                .apply {
+                    replyToMessageId = message.messageId
+                    allowSendingWithoutReply = true
+                }
+            sengTGMessage(tgMessage)?.let {
                 // save reply to mongo
-//                mongo.saveMessage(tgMessege.toMessage())
+//                mongo.saveMessage(it.toMessage())
             }
         }
 
