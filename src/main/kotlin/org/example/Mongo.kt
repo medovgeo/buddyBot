@@ -2,6 +2,7 @@ package org.example
 
 import com.mongodb.client.model.Filters
 import com.mongodb.kotlin.client.coroutine.MongoClient
+import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.flow.toCollection
 import kotlinx.coroutines.flow.toList
 import org.slf4j.Logger
@@ -37,7 +38,7 @@ class Mongo(client: MongoClient) {
 //    }
 
     suspend fun getChatHistory(chatId: Long): MutableList<Message> = try {
-        collection.find(Filters.eq(Message::chatId.name, chatId)).limit(100)
+        collection.find(Filters.eq(Message::chatId.name, chatId)).skip(collection.countDocuments(Filters.eq(Message::chatId.name, chatId)).toInt() - 100)
             .toCollection(mutableListOf())
     } catch (e: Exception) {
         logger.error("Error reading messages from mongo for chatId: $chatId", e)
