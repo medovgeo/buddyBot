@@ -49,8 +49,7 @@ fun Update.prepareReply(botName: String): Pair<List<Message>, Boolean> {
                 || message?.replyToMessage?.from?.userName == botName
     }
 
-//    return mess to !needsReply
-    return mess to true
+    return mess to !needsReply
 }
 
 @Serializable
