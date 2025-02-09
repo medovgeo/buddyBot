@@ -25,11 +25,11 @@ class DeepSeek(envToken: String, private val botName: String) : ModelApi {
     override suspend fun generateComment(messages: List<org.example.Message>): String = runCatching {
         val text = Json.encodeToString(messages)
         val httpResponse = withContext(Dispatchers.IO) {
-            sendRequest(modelRequestBuilder, buildJson(generatePrompt(botName, text)))
+            sendRequest(modelRequestBuilder, buildJson(text))
         }
         extractResponseText(httpResponse)
     }.getOrElse {
-            logger.error("Error while fetching gemini message, mess: $messages", it)
+            logger.error("Error while fetching deepseek message, mess: $messages", it)
             ""
         }
 
@@ -43,10 +43,13 @@ class DeepSeek(envToken: String, private val botName: String) : ModelApi {
 
     fun buildJson(text: String) = Json.encodeToString(
         Request(
+            model = "deepseek-chat",
             messages = listOf(
                 Message("system", generateSystemRole(botName)),
                 Message("user", generatePrompt(botName, text)),
             ),
+            response_format = RespFormat("text"),
+            temperature = 1.5
         )
     )
 
@@ -62,10 +65,10 @@ class DeepSeek(envToken: String, private val botName: String) : ModelApi {
 
     @Serializable
     data class Request(
-        val model: String = "deepseek-chat",
+        val model: String,
         val messages: List<Message>,
-        val response_format: RespFormat = RespFormat("text"),
-        val temperature: Double = 1.8,
+        val response_format: RespFormat,
+        val temperature: Double,
     )
 
     @Serializable
