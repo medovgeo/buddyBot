@@ -22,24 +22,31 @@ class DeepSeek(envToken: String, private val botName: String) : ModelApi {
             .header("Content-Type", "application/json").header("Authorization", token)
     }
 
-    override suspend fun generateComment(messages: List<org.example.Message>): String = runCatching {
+    override suspend fun generateComment(messages: List<org.example.Message>): String {
         val text = Json.encodeToString(messages)
-        val httpResponse = withContext(Dispatchers.IO) {
-            sendRequest(modelRequestBuilder, buildJson(text))
-        }
-        extractResponseText(httpResponse)
-    }.getOrElse {
-            logger.error("Error while fetching deepseek message, mess: $messages", it)
+        val request = buildJson(text)
+        return try {
+            val httpResponse = withContext(Dispatchers.IO) {
+                sendRequest(modelRequestBuilder, request)
+            }
+            extractResponseText(httpResponse)
+        } catch (e: Exception) {
+            logger.error("Error while fetching deepseek message, request: $request", e)
             ""
         }
+    }
 
     fun sendRequest(httpBuilder: HttpRequest.Builder, message: String): String {
         val request = httpBuilder.POST(HttpRequest.BodyPublishers.ofString(message)).build()
         return client.send(request, HttpResponse.BodyHandlers.ofString()).body()
     }
 
-    fun extractResponseText(resp: String) =
+    fun extractResponseText(resp: String) = try {
         json.decodeFromString<Response>(resp).choices.first().message.content
+    } catch (e: Exception) {
+        logger.error("Error while parsing deepseek message, mess: $resp", e)
+        throw e
+    }
 
     fun buildJson(text: String) = Json.encodeToString(
         Request(
