@@ -37,7 +37,7 @@ class Mongo(client: MongoClient) {
 //    }
 
     suspend fun getChatHistory(chatId: Long): MutableList<Message> = try {
-        collection.find(Filters.eq(Message::chatId.name, chatId))
+        collection.find(Filters.eq(Message::chatId.name, chatId)).limit(50)
             .toCollection(mutableListOf())
     } catch (e: Exception) {
         logger.error("Error reading messages from mongo for chatId: $chatId", e)
