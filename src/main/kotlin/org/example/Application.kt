@@ -2,6 +2,7 @@ package org.example
 
 import com.mongodb.kotlin.client.coroutine.MongoClient
 import io.github.cdimascio.dotenv.dotenv
+import org.example.models.DeepSeek
 import org.slf4j.LoggerFactory
 import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient
 import org.telegram.telegrambots.longpolling.TelegramBotsLongPollingApplication
@@ -27,13 +28,13 @@ fun main() {
     val client = MongoClient.create(mongoUri)
     val mongo = Mongo(client)
 
-    // Gemini model and token
+    // LLM model and token
     val geminiModel = dotenv["GEMINI_MODEL"] ?: throw IllegalArgumentException("GEMINI_MODEL is not set")
     val geminiToken = dotenv["GEMINI_TOKEN"] ?: throw IllegalArgumentException("GEMINI_TOKEN is not set")
-    // Gemini client
-    val gemini = Gemini(geminiModel, geminiToken, botName)
+    // LLM Model client
+    val modelApi = DeepSeek(geminiToken, botName)
 
-    val bot = Bot(botName, telegramClient, mongo, gemini)
+    val bot = Bot(botName, telegramClient, mongo, modelApi)
     TelegramBotsLongPollingApplication().use { app ->
         app.registerBot(botToken, bot)
         Thread.currentThread().join()

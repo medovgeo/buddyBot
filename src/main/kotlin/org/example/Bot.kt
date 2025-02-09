@@ -4,6 +4,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.example.models.ModelApi
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient
@@ -20,7 +21,7 @@ class Bot(
     private val botName: String,
     private val telegramClient: OkHttpTelegramClient,
     private val mongo: Mongo,
-    private val gemini: Gemini,
+    private val modelApi: ModelApi,
 ) : LongPollingSingleThreadUpdateConsumer {
 
     private val errHandler = CoroutineExceptionHandler { _, throwable ->
@@ -54,7 +55,7 @@ class Bot(
         val history = mongo.getChatHistory(messages.last().chatId) // get chat history (todo : cache or mongo)
         history.addAll(messages)
 
-        val comment = gemini.generateComment(history) // request reply in gemini
+        val comment = modelApi.generateComment(history) // request reply in gemini
 
         mongo.saveMessage(messages.last())
 
