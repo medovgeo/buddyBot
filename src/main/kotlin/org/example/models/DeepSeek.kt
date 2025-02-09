@@ -56,7 +56,7 @@ class DeepSeek(envToken: String, private val botName: String) : ModelApi {
                 Message("user", generatePrompt(botName, text)),
             ),
             response_format = RespFormat("text"),
-            temperature = 1.5
+            temperature = 1.2
         )
     )
 
