@@ -59,8 +59,6 @@ data class Message(
     val from: String,
     @Serializable(with = LocalDateTimeSerializer::class)
     val dateTime: LocalDateTime,
-//    val fromName: String,
-//    val fromNickname: String? = null,
     val replyTo: String? = null,
     val text: String,
 )

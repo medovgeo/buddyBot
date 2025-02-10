@@ -5,7 +5,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.example.Message
-import org.example.models.Gemini.Companion.modelRequestBuilder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.URI
@@ -28,7 +27,7 @@ class Gemini(envModel: String, envToken: String, private val botName: String) :
     override suspend fun generateComment(messages: List<Message>): String = runCatching {
         val text = Json.encodeToString(messages)
         val httpResponse = withContext(Dispatchers.IO) {
-            sendRequest(modelRequestBuilder, buildJson(generatePrompt(botName, text)))
+            sendRequest(modelRequestBuilder, buildJson(generatePrompt(text)))
         }
         extractResponseText(httpResponse)
     }.getOrElse {

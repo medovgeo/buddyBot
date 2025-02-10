@@ -29,10 +29,10 @@ fun main() {
     val mongo = Mongo(client)
 
     // LLM model and token
-    val geminiModel = dotenv["GEMINI_MODEL"] ?: throw IllegalArgumentException("GEMINI_MODEL is not set")
-    val geminiToken = dotenv["GEMINI_TOKEN"] ?: throw IllegalArgumentException("GEMINI_TOKEN is not set")
+    val llmModel = dotenv["GEMINI_MODEL"] ?: throw IllegalArgumentException("GEMINI_MODEL is not set")
+    val llmToken = dotenv["GEMINI_TOKEN"] ?: throw IllegalArgumentException("GEMINI_TOKEN is not set")
     // LLM Model client
-    val modelApi = DeepSeek(geminiToken, botName)
+    val modelApi = DeepSeek(llmToken, botName)
 
     val bot = Bot(botName, telegramClient, mongo, modelApi)
     TelegramBotsLongPollingApplication().use { app ->
