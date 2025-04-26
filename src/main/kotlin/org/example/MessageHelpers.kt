@@ -44,7 +44,7 @@ fun Update.prepareReply(botName: String): Pair<List<Message>, Boolean> {
     val needsReply = when {
         (message?.text ?: "").isBlank() -> false
         message?.forwardFromChat != null -> false
-        Random.nextInt(1, 100) > 96 -> true
+//        Random.nextInt(1, 100) > 96 -> true
         else -> message?.text?.contains("@$botName") ?: false
                 || message?.replyToMessage?.from?.userName == botName
     }
